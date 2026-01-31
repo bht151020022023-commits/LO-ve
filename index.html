@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Love Chat 💙</title>
+
+<style>
+html,body{
+  margin:0;padding:0;height:100%;font-family:Arial;overflow:hidden;
+  background: radial-gradient(circle at 50% 40%, #00bfff 0%, #0f2027 70%);
+}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#6a11cb,#2575fc);z-index:9999;}
+.login-card{width:320px;background:#fff;border-radius:20px;padding:30px;text-align:center;}
+.input-box{background:#f1f1f1;border-radius:30px;padding:10px 15px;margin:10px 0;}
+.input-box input{border:none;background:transparent;outline:none;width:100%;}
+.login-btn{width:100%;padding:12px;border:none;border-radius:30px;background:#4CAF50;color:#fff;font-weight:bold;margin-top:10px;}
+.forgot{font-size:12px;margin-top:10px;color:#777}
+
+/* EFFECTS */
+.heart{position:fixed;bottom:-20px;animation:float 6s linear forwards;opacity:.8;}
+@keyframes float{to{transform:translateY(-110vh);opacity:0;}}
+
+/* WIDGET */
+.love-widget{position:fixed;top:15px;left:15px;text-align:center;z-index:1000;}
+.cat-img{font-size:80px;cursor:pointer;}
+.time-box{margin-top:-10px;padding:8px;border-radius:18px;background:#fff;color:#000;font-weight:900;font-size:14px;text-align:center;border:2px solid #00bfff;box-shadow:0 0 8px #00bfff,0 0 18px #00bfff;cursor:pointer;}
+
+/* BANNER */
+.love-banner{
+  position:fixed;top:-140px;left:50%;transform:translateX(-50%);
+  width:80%;max-width:800px;padding:18px;background:#fff;color:#000;
+  font-weight:900;text-align:center;border-radius:40px;
+  border:3px solid #00bfff;box-shadow:0 0 12px #00bfff,0 0 35px #00bfff;
+  transition:top .6s;z-index:6000;
+}
+.love-banner.show{top:20px;}
+
+/* CHAT */
+.chat-wrapper{position:fixed;inset:0;display:none;justify-content:center;align-items:center;backdrop-filter:blur(8px);}
+.chat-card{width:320px;background:rgba(0,0,0,.75);border-radius:20px;padding:20px;color:#fff;}
+.message{margin:6px 0;padding:8px 12px;border-radius:15px;background:#ff4d6d;position:relative;}
+.time{display:block;font-size:11px;opacity:.8;margin-top:3px;}
+.recall-btn{position:absolute;right:10px;top:5px;font-size:11px;color:#ffe082;cursor:pointer;display:none;}
+
+textarea{width:100%;border-radius:10px;padding:8px;}
+button{width:100%;padding:10px;border:none;border-radius:10px;color:#fff;margin-top:5px;background:#25d366;}
+.logout-btn{background:#000;}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h2>User Login</h2>
+    <div class="input-box"><input type="email" id="email" placeholder="Email Id"></div>
+    <div class="input-box"><input type="password" id="password" placeholder="Password"></div>
+    <button class="login-btn" onclick="login()">Login</button>
+    <div class="forgot">Love App Private 💙</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="love-widget">
+  <div class="cat-img" onclick="toggleChat()">🐱</div>
+  <div class="time-box" id="catDays" onclick="toggleBanner(event)"></div>
+</div>
+
+<div id="loveBanner" class="love-banner" onclick="closeBanner()"></div>
+
+<div class="chat-wrapper" id="chatBox">
+  <div class="chat-card">
+    <div id="messages" style="height:200px;overflow-y:auto;"></div>
+    <textarea id="messageInput"></textarea>
+    <button onclick="sendMessage()">Gửi lời yêu 💚</button>
+    <button class="logout-btn" onclick="logout()">Đăng xuất</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc }
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyBC9LMMYeDyZ3IPiIKcuynr586yawNkWhA",
+  authDomain:"lo-ve-ffbd2.firebaseapp.com",
+  projectId:"lo-ve-ffbd2"
+};
+const ALLOWED=["20102002@gmail.com","15102002@gmail.com"];
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth();
+const db=getFirestore();
+
+window.login=()=>{
+  signInWithEmailAndPassword(auth,email.value,password.value).catch(e=>alert(e.message));
+};
+
+onAuthStateChanged(auth,user=>{
+  if(user){
+    if(!ALLOWED.includes(user.email)){alert("Không được phép");signOut(auth);return;}
+    loginScreen.style.display="none";
+    loadMessages();
+  }else loginScreen.style.display="flex";
+});
+
+function loadMessages(){
+  const q=query(collection(db,"loveChat"),orderBy("time"));
+  onSnapshot(q,snap=>{
+    messages.innerHTML="";
+    snap.forEach(d=>{
+      const m=d.data();
+      const div=document.createElement("div");
+      div.className="message";
+      const t=new Date(m.time);
+      const hh=t.getHours().toString().padStart(2,'0');
+      const mm=t.getMinutes().toString().padStart(2,'0');
+      div.innerHTML=`${m.text}<span class="time">${hh}:${mm}</span><span class="recall-btn">Thu hồi</span>`;
+      
+      div.onclick=()=>{
+        const btn=div.querySelector(".recall-btn");
+        btn.style.display="block";
+        btn.onclick=async(e)=>{
+          e.stopPropagation();
+          if(confirm("Thu hồi tin nhắn này?")){
+            await deleteDoc(doc(db,"loveChat",d.id));
+          }
+        }
+      };
+      messages.appendChild(div);
+    });
+  });
+}
+
+window.sendMessage=async()=>{
+  if(messageInput.value.trim()){
+    await addDoc(collection(db,"loveChat"),{text:messageInput.value,time:Date.now()});
+    messageInput.value="";
+  }
+};
+
+window.logout=()=>signOut(auth);
+
+/* EFFECTS */
+setInterval(()=>{const h=document.createElement("div");h.className="heart";h.innerHTML="💚";h.style.left=Math.random()*100+"vw";document.body.appendChild(h);setTimeout(()=>h.remove(),6000);},600);
+
+/* LOVE TIME */
+const start=new Date("2025-10-12");
+setInterval(()=>{const d=Math.floor((Date.now()-start)/86400000);catDays.innerHTML="💚 "+d+" ngày";},1000);
+
+/* BANNER */
+window.toggleBanner=e=>{
+  e.stopPropagation();
+  const now=new Date();
+  loveBanner.innerHTML=`Chúc mừng chúng ta đã yêu nhau<br>12/10/2025 - ${now.toLocaleDateString()}<br>Cảm ơn em vì đã ở bên anh 💙`;
+  loveBanner.classList.add("show");
+  catDays.style.display="none";
+};
+window.closeBanner=()=>{loveBanner.classList.remove("show");catDays.style.display="block";}
+window.toggleChat=()=>chatBox.style.display=chatBox.style.display==="flex"?"none":"flex";
+</script>
+</body>
+</html>
