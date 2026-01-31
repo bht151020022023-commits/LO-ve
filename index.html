@@ -17,9 +17,8 @@ html,body{
 .input-box{background:#f1f1f1;border-radius:30px;padding:10px 15px;margin:10px 0;}
 .input-box input{border:none;background:transparent;outline:none;width:100%;}
 .login-btn{width:100%;padding:12px;border:none;border-radius:30px;background:#4CAF50;color:#fff;font-weight:bold;margin-top:10px;}
-.forgot{font-size:12px;margin-top:10px;color:#777}
 
-/* EFFECTS */
+/* EFFECT */
 .heart{position:fixed;bottom:-20px;animation:float 6s linear forwards;opacity:.8;}
 @keyframes float{to{transform:translateY(-110vh);opacity:0;}}
 
@@ -41,7 +40,9 @@ html,body{
 /* CHAT */
 .chat-wrapper{position:fixed;inset:0;display:none;justify-content:center;align-items:center;backdrop-filter:blur(8px);}
 .chat-card{width:320px;background:rgba(0,0,0,.75);border-radius:20px;padding:20px;color:#fff;}
-.message{margin:6px 0;padding:8px 12px;border-radius:15px;background:#ff4d6d;position:relative;}
+.message{margin:6px 0;padding:8px 12px;border-radius:15px;max-width:75%;position:relative;}
+.me{background:#ff4d6d;margin-left:auto;}
+.you{background:#444;margin-right:auto;}
 .time{display:block;font-size:11px;opacity:.8;margin-top:3px;}
 .recall-btn{position:absolute;right:10px;top:5px;font-size:11px;color:#ffe082;cursor:pointer;display:none;}
 
@@ -57,10 +58,9 @@ button{width:100%;padding:10px;border:none;border-radius:10px;color:#fff;margin-
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <h2>User Login</h2>
-    <div class="input-box"><input type="email" id="email" placeholder="Email Id"></div>
+    <div class="input-box"><input type="email" id="email" placeholder="Email"></div>
     <div class="input-box"><input type="password" id="password" placeholder="Password"></div>
     <button class="login-btn" onclick="login()">Login</button>
-    <div class="forgot">Love App Private 💙</div>
   </div>
 </div>
 
@@ -99,9 +99,8 @@ const app=initializeApp(firebaseConfig);
 const auth=getAuth();
 const db=getFirestore();
 
-window.login=()=>{
-  signInWithEmailAndPassword(auth,email.value,password.value).catch(e=>alert(e.message));
-};
+window.login=()=>signInWithEmailAndPassword(auth,email.value,password.value).catch(e=>alert(e.message));
+window.logout=()=>signOut(auth);
 
 onAuthStateChanged(auth,user=>{
   if(user){
@@ -118,12 +117,18 @@ function loadMessages(){
     snap.forEach(d=>{
       const m=d.data();
       const div=document.createElement("div");
-      div.className="message";
+      const isMe=m.sender===auth.currentUser.email;
+      div.className="message "+(isMe?"me":"you");
+
+      const name=m.sender.startsWith("1510")?"Anh":"Em";
       const t=new Date(m.time);
       const hh=t.getHours().toString().padStart(2,'0');
       const mm=t.getMinutes().toString().padStart(2,'0');
-      div.innerHTML=`${m.text}<span class="time">${hh}:${mm}</span><span class="recall-btn">Thu hồi</span>`;
-      
+
+      div.innerHTML=`<b>${name}:</b> ${m.text}
+      <span class="time">${hh}:${mm}</span>
+      <span class="recall-btn">Thu hồi</span>`;
+
       div.onclick=()=>{
         const btn=div.querySelector(".recall-btn");
         btn.style.display="block";
@@ -134,6 +139,7 @@ function loadMessages(){
           }
         }
       };
+
       messages.appendChild(div);
     });
   });
@@ -141,30 +147,46 @@ function loadMessages(){
 
 window.sendMessage=async()=>{
   if(messageInput.value.trim()){
-    await addDoc(collection(db,"loveChat"),{text:messageInput.value,time:Date.now()});
+    await addDoc(collection(db,"loveChat"),{
+      text:messageInput.value,
+      time:Date.now(),
+      sender:auth.currentUser.email
+    });
     messageInput.value="";
   }
 };
-
-window.logout=()=>signOut(auth);
-
-/* EFFECTS */
-setInterval(()=>{const h=document.createElement("div");h.className="heart";h.innerHTML="💚";h.style.left=Math.random()*100+"vw";document.body.appendChild(h);setTimeout(()=>h.remove(),6000);},600);
 
 /* LOVE TIME */
 const start=new Date("2025-10-12");
 setInterval(()=>{const d=Math.floor((Date.now()-start)/86400000);catDays.innerHTML="💚 "+d+" ngày";},1000);
 
+/* LOVE DURATION */
+function calcLoveDuration(start, now){
+  let years=now.getFullYear()-start.getFullYear();
+  let months=now.getMonth()-start.getMonth();
+  let days=now.getDate()-start.getDate();
+  if(days<0){months--;days+=new Date(now.getFullYear(),now.getMonth(),0).getDate();}
+  if(months<0){years--;months+=12;}
+  return `${years} năm ${months} tháng ${days} ngày`;
+}
+
 /* BANNER */
 window.toggleBanner=e=>{
   e.stopPropagation();
   const now=new Date();
-  loveBanner.innerHTML=`Chúc mừng chúng ta đã yêu nhau<br>12/10/2025 - ${now.toLocaleDateString()}<br>Cảm ơn em vì đã ở bên anh 💙`;
+  const startDate=new Date("2025-10-12");
+  loveBanner.innerHTML=`
+  Chúc mừng chúng ta đã yêu nhau<br>
+  12/10/2025 - ${now.toLocaleDateString()}<br>
+  Cảm ơn em vì đã ở bên anh "<b>${calcLoveDuration(startDate,now)}</b>" 💙`;
   loveBanner.classList.add("show");
   catDays.style.display="none";
 };
 window.closeBanner=()=>{loveBanner.classList.remove("show");catDays.style.display="block";}
 window.toggleChat=()=>chatBox.style.display=chatBox.style.display==="flex"?"none":"flex";
+
+/* HEART */
+setInterval(()=>{const h=document.createElement("div");h.className="heart";h.innerHTML="💚";h.style.left=Math.random()*100+"vw";document.body.appendChild(h);setTimeout(()=>h.remove(),6000);},600);
 </script>
 </body>
 </html>
