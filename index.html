@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Love Chat 💙</title>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
-html,body{
-  margin:0;height:100%;font-family:Arial;overflow:hidden;
-  background: radial-gradient(circle at 50% 40%, #00bfff 0%, #0f2027 70%);
-}
+html,body{margin:0;height:100%;font-family:Arial;overflow:hidden;background: radial-gradient(circle at 50% 40%, #00bfff 0%, #0f2027 70%);}
 
 /* LOGIN */
 .login-screen{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#6a11cb,#2575fc);z-index:9999;}
@@ -18,37 +17,30 @@ html,body{
 .input-box input{border:none;background:transparent;outline:none;width:100%;}
 .login-btn{width:100%;padding:12px;border:none;border-radius:30px;background:#4CAF50;color:#fff;font-weight:bold;}
 
-/* HEART */
-.heart{position:fixed;bottom:-20px;animation:float 6s linear forwards;opacity:.8;}
-@keyframes float{to{transform:translateY(-110vh);opacity:0;}}
-
-/* WIDGET */
-.love-widget{position:fixed;top:15px;left:15px;text-align:center;z-index:1000;}
-.cat-img{font-size:80px;cursor:pointer;}
-.time-box{margin-top:-10px;padding:8px;border-radius:18px;background:#fff;color:#000;font-weight:900;font-size:14px;text-align:center;border:2px solid #00bfff;box-shadow:0 0 8px #00bfff,0 0 18px #00bfff;cursor:pointer;}
-
-/* BANNER */
-.love-banner{
-  position:fixed;top:-140px;left:50%;transform:translateX(-50%);
-  width:80%;max-width:800px;padding:18px;background:#fff;color:#000;
-  font-weight:900;text-align:center;border-radius:40px;
-  border:3px solid #00bfff;box-shadow:0 0 12px #00bfff,0 0 35px #00bfff;
-  transition:top .6s;z-index:6000;
-}
-.love-banner.show{top:20px;}
-
 /* CHAT */
 .chat-wrapper{position:fixed;inset:0;display:none;justify-content:center;align-items:center;backdrop-filter:blur(8px);}
 .chat-card{width:320px;background:rgba(0,0,0,.75);border-radius:20px;padding:20px;color:#fff;}
-.message{margin:6px 0;padding:8px 12px;border-radius:15px;max-width:75%;position:relative;}
+.message{margin:6px 0;padding:8px 12px;border-radius:15px;max-width:75%;}
 .me{background:#ff4d6d;margin-left:auto;}
 .you{background:#444;margin-right:auto;}
-.time{display:block;font-size:11px;opacity:.8;margin-top:3px;}
-.recall-btn{position:absolute;right:10px;top:5px;font-size:11px;color:#ffe082;cursor:pointer;display:none;}
-
 textarea{width:100%;border-radius:10px;padding:8px;}
 button{width:100%;padding:10px;border:none;border-radius:10px;color:#fff;margin-top:5px;background:#25d366;}
 .logout-btn{background:#000;}
+
+/* HEART EFFECT */
+.heart{position:fixed;bottom:-20px;animation:float 6s linear forwards;opacity:.8;}
+@keyframes float{to{transform:translateY(-110vh);opacity:0;}}
+
+/* FLOAT BUTTON */
+.float-btn{position:fixed;bottom:20px;right:20px;width:65px;height:65px;border-radius:50%;background:#ff4b5c;color:#fff;font-size:26px;display:flex;justify-content:center;align-items:center;cursor:pointer;z-index:9999}
+.album-btn{position:fixed;bottom:20px;right:20px;width:55px;height:55px;border-radius:50%;background:#fff;display:flex;justify-content:center;align-items:center;font-size:22px;transform:translate(-55px,-55px) scale(0);transition:.3s;z-index:9998}
+
+/* ALBUM POPUP */
+.album-popup{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;z-index:10000;color:#fff;overflow:auto}
+.album-header{display:flex;justify-content:space-between;padding:10px;background:#111}
+.album-list,.photo-grid{display:flex;flex-wrap:wrap;gap:10px;padding:10px}
+.album-box,.photo-box{background:#1f2a38;padding:8px;border-radius:8px;cursor:pointer}
+.photo-box img{width:100px;border-radius:8px}
 </style>
 </head>
 
@@ -63,19 +55,38 @@ button{width:100%;padding:10px;border:none;border-radius:10px;color:#fff;margin-
   </div>
 </div>
 
-<div class="love-widget">
-  <div class="cat-img" onclick="toggleChat()">🐱</div>
-  <div class="time-box" id="catDays" onclick="toggleBanner(event)"></div>
-</div>
-
-<div id="loveBanner" class="love-banner" onclick="closeBanner()"></div>
-
 <div class="chat-wrapper" id="chatBox">
   <div class="chat-card">
     <div id="messages" style="height:200px;overflow-y:auto;"></div>
     <textarea id="messageInput"></textarea>
     <button onclick="sendMessage()">Gửi lời yêu 💚</button>
     <button class="logout-btn" onclick="logout()">Đăng xuất</button>
+  </div>
+</div>
+
+<!-- FLOAT -->
+<div class="float-btn" id="floatBtn">+</div>
+<div class="album-btn" id="openAlbumBtn">📷</div>
+
+<!-- ALBUM -->
+<div class="album-popup" id="albumPopup">
+  <div class="album-header">
+    <h2>📁 Album kỷ niệm</h2>
+    <button onclick="albumPopup.style.display='none'">❌</button>
+  </div>
+
+  <div style="padding:10px">
+    <input id="newAlbumName" placeholder="Tên album">
+    <button onclick="createAlbum()">Tạo Album</button>
+  </div>
+
+  <div class="album-list" id="albumList"></div>
+
+  <div id="photoSection" style="display:none;padding:10px">
+    <h3>🖼 Ảnh trong album</h3>
+    <input type="file" id="fileInput" accept="image/*">
+    <button onclick="uploadPhoto()">Tải ảnh</button>
+    <div class="photo-grid" id="photoGrid"></div>
   </div>
 </div>
 
@@ -86,101 +97,36 @@ from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc }
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig={
-  apiKey:"AIzaSyBC9LMMYeDyZ3IPiIKcuynr586yawNkWhA",
-  authDomain:"lo-ve-ffbd2.firebaseapp.com",
-  projectId:"lo-ve-ffbd2"
-};
-
+const firebaseConfig={apiKey:"AIzaSyBC9LMMYeDyZ3IPiIKcuynr586yawNkWhA",authDomain:"lo-ve-ffbd2.firebaseapp.com",projectId:"lo-ve-ffbd2"};
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
 const db=getFirestore(app);
 
-window.login=()=>signInWithEmailAndPassword(auth,email.value,password.value).catch(e=>alert(e.message));
+/* CHAT */
+window.login=()=>signInWithEmailAndPassword(auth,email.value,password.value);
 window.logout=()=>signOut(auth);
-
-onAuthStateChanged(auth,user=>{
-  if(user){
-    loginScreen.style.display="none";
-    loadMessages();
-  }else loginScreen.style.display="flex";
-});
-
-function loadMessages(){
-  onSnapshot(collection(db,"loveChat"),snap=>{
-    messages.innerHTML="";
-    snap.docs.sort((a,b)=> (a.data().time||0)-(b.data().time||0))
-    .forEach(d=>{
-      const m=d.data();
-      const div=document.createElement("div");
-      const isMe=m.sender===auth.currentUser.email;
-      div.className="message "+(isMe?"me":"you");
-
-      const name=m.sender?.startsWith("1510")?"Anh":"Em";
-      const t=new Date(m.time||Date.now());
-      const hh=t.getHours().toString().padStart(2,'0');
-      const mm=t.getMinutes().toString().padStart(2,'0');
-
-      div.innerHTML=`<b>${name}:</b> ${m.text}
-      <span class="time">${hh}:${mm}</span>
-      <span class="recall-btn">Thu hồi</span>`;
-
-      div.onclick=()=>{
-        const btn=div.querySelector(".recall-btn");
-        btn.style.display="block";
-        btn.onclick=async(e)=>{
-          e.stopPropagation();
-          if(confirm("Thu hồi tin nhắn này?")){
-            await deleteDoc(doc(db,"loveChat",d.id));
-          }
-        }
-      };
-      messages.appendChild(div);
-    });
-  });
-}
-
-window.sendMessage=async()=>{
-  if(messageInput.value.trim()){
-    await addDoc(collection(db,"loveChat"),{
-      text:messageInput.value,
-      time:Date.now(),
-      sender:auth.currentUser.email
-    });
-    messageInput.value="";
-  }
-};
-
-/* LOVE TIME */
-const start=new Date("2025-10-12");
-setInterval(()=>{const d=Math.floor((Date.now()-start)/86400000);catDays.innerHTML="💚 "+d+" ngày";},1000);
-
-/* DURATION */
-function calcLoveDuration(start, now){
-  let y=now.getFullYear()-start.getFullYear();
-  let m=now.getMonth()-start.getMonth();
-  let d=now.getDate()-start.getDate();
-  if(d<0){m--;d+=new Date(now.getFullYear(),now.getMonth(),0).getDate();}
-  if(m<0){y--;m+=12;}
-  return `${y} năm ${m} tháng ${d} ngày`;
-}
-
-window.toggleBanner=e=>{
-  e.stopPropagation();
-  const now=new Date();
-  loveBanner.innerHTML=`
-  Chúc mừng chúng ta đã yêu nhau<br>
-  12/10/2025 - ${now.toLocaleDateString()}<br>
-  Cảm ơn em vì đã ở bên anh "<b>${calcLoveDuration(start,now)}</b>" 💙`;
-  loveBanner.classList.add("show");
-  catDays.style.display="none";
-};
-
-window.closeBanner=()=>{loveBanner.classList.remove("show");catDays.style.display="block";}
-window.toggleChat=()=>chatBox.style.display=chatBox.style.display==="flex"?"none":"flex";
+onAuthStateChanged(auth,user=>{if(user){loginScreen.style.display="none";chatBox.style.display="flex";loadMessages();}});
+function loadMessages(){onSnapshot(collection(db,"loveChat"),snap=>{messages.innerHTML="";snap.docs.forEach(d=>{const m=d.data();const div=document.createElement("div");div.className="message";div.innerText=m.text;messages.appendChild(div);});});}
+window.sendMessage=async()=>{if(messageInput.value.trim()){await addDoc(collection(db,"loveChat"),{text:messageInput.value,time:Date.now(),sender:auth.currentUser.email});messageInput.value="";}};
 
 /* HEART */
 setInterval(()=>{const h=document.createElement("div");h.className="heart";h.innerHTML="💚";h.style.left=Math.random()*100+"vw";document.body.appendChild(h);setTimeout(()=>h.remove(),6000);},600);
+
+/* FLOAT BUTTON */
+floatBtn.onclick=()=>{openAlbumBtn.style.transform=openAlbumBtn.style.transform.includes("scale(1)")?"translate(-55px,-55px) scale(0)":"translate(-55px,-55px) scale(1)";};
+openAlbumBtn.onclick=()=>{albumPopup.style.display="flex";loadAlbums();};
+
+/* ALBUM FIRESTORE */
+let currentAlbumId=null;
+function loadAlbums(){onSnapshot(collection(db,"albums"),snap=>{albumList.innerHTML="";snap.docs.forEach(d=>{const box=document.createElement("div");box.className="album-box";box.innerText=d.data().name;box.onclick=()=>openAlbum(d.id);albumList.appendChild(box);});});}
+window.createAlbum=async()=>{await addDoc(collection(db,"albums"),{name:newAlbumName.value});newAlbumName.value="";};
+function openAlbum(id){currentAlbumId=id;photoSection.style.display="block";onSnapshot(collection(db,"photos"),snap=>{photoGrid.innerHTML="";snap.docs.filter(d=>d.data().albumId===id).forEach(d=>{const box=document.createElement("div");box.className="photo-box";box.innerHTML=`<img src="${d.data().url}">`;photoGrid.appendChild(box);});});}
+
+/* UPLOAD DRIVE */
+const CLIENT_ID="1037417752773-l2sg5hbdrdcs0jg47ur0j1htebkl52cl.apps.googleusercontent.com";
+const SCOPES="https://www.googleapis.com/auth/drive.file";
+const tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:''});
+window.uploadPhoto=()=>{const file=fileInput.files[0];if(!file||!currentAlbumId)return;tokenClient.callback=async(resp)=>{const form=new FormData();form.append("metadata",new Blob([JSON.stringify({name:file.name})],{type:"application/json"}));form.append("file",file);const res=await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{Authorization:"Bearer "+resp.access_token},body:form});const data=await res.json();const link=`https://drive.google.com/thumbnail?id=${data.id}&sz=w1200`;await addDoc(collection(db,"photos"),{albumId:currentAlbumId,url:link});};tokenClient.requestAccessToken();};
 </script>
 </body>
 </html>
